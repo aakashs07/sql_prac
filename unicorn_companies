@@ -1,0 +1,35 @@
+WITH unicorn_database AS (
+	SELECT 
+		public.industries.industry,
+		to_char(public.dates.date_joined, 'YYYY') AS year,
+		public.dates.company_id, 
+		public.companies.company,
+		ROUND(public.funding.valuation, 2) AS valuation
+	FROM public.dates
+		JOIN public.funding
+		  ON public.dates.company_id = public.funding.company_id
+		JOIN public.industries
+		  ON public.industries.company_id = public.funding.company_id
+		JOIN public.companies
+		  ON public.companies.company_id = public.funding.company_id
+	WHERE
+		to_char(public.dates.date_joined, 'YYYY') IN ('2019', '2020', '2021')
+)
+
+SELECT 
+	industry, 
+	year,
+	COUNT(company) AS num_unicorns, 
+	ROUND(AVG(valuation/1000000000), 2) AS average_valuation_billions
+FROM unicorn_database
+WHERE industry IN (
+	SELECT industry
+	FROM unicorn_database
+	GROUP BY industry
+	ORDER BY COUNT(company) DESC
+	lIMIT 3
+)
+GROUP BY 
+	year, industry
+ORDER BY 
+	year DESC, num_unicorns DESC
